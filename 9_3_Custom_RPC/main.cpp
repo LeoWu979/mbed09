@@ -1,6 +1,7 @@
 #include "mbed.h"
 #include "mbed_rpc.h"
 
+
 /**
  *  This example program has been updated to use the RPC implementation in the new mbed libraries.
  *  This example demonstrates using RPC over serial
@@ -10,9 +11,38 @@ RpcDigitalOut myled2(LED2,"myled2");
 RpcDigitalOut myled3(LED3,"myled3");
 BufferedSerial pc(USBTX, USBRX);
 void LEDControl(Arguments *in, Reply *out);
-RPCFunction rpcLED(&LEDControl, "LEDControl");
+void LEDblink(Arguments *in, Reply *out);
+RPCFunction rpcLED(&LEDblink, "LEDblink");
+
 double x, y;
 
+Thread t;
+EventQueue q(32 * EVENTS_EVENT_SIZE);
+
+void blink(){
+while(1) {
+    char buffer[200], outbuf[256];
+    char strings[20];
+    sprintf(strings, "/myled2/write 1");
+    strcpy(buffer, strings);
+    RPC::call(buffer, outbuf);
+    ThisThread::sleep_for(500ms);
+
+    sprintf(strings, "/myled2/write 0");
+    strcpy(buffer, strings);
+        RPC::call(buffer, outbuf);
+
+    sprintf(strings, "/myled3/write 1");
+    strcpy(buffer, strings);
+    RPC::call(buffer, outbuf);
+
+    ThisThread::sleep_for(500ms);
+
+    sprintf(strings, "/myled3/write 0");
+    strcpy(buffer, strings);
+    RPC::call(buffer, outbuf);
+}
+}
 int main() {
     //The mbed RPC classes are now wrapped to create an RPC enabled version - see RpcClasses.h so don't add to base class
 
@@ -21,7 +51,7 @@ int main() {
 
     FILE *devin = fdopen(&pc, "r");
     FILE *devout = fdopen(&pc, "w");
-
+ 
     while(1) {
         memset(buf, 0, 256);
         for (int i = 0; ; i++) {
@@ -37,7 +67,7 @@ int main() {
         printf("%s\r\n", outbuf);
     }
 }
-
+/*
 // Make sure the method takes in Arguments and Reply objects.
 void LEDControl (Arguments *in, Reply *out)   {
     bool success = true;
@@ -60,3 +90,62 @@ void LEDControl (Arguments *in, Reply *out)   {
         out->putData("Failed to execute LED control.");
     }
 }
+*/
+
+void LEDblink (Arguments *in, Reply *out)   {
+    bool success = true;
+  //  t.start(callback(&q, &EventQueue::dispatch_forever));
+    // In this scenario, when using RPC delimit the two arguments with a space.
+//    x = in->getArg<double>();
+    int x;
+    x = in->getArg<int>();
+
+    // Have code here to call another RPC function to wake up specific led or close it.
+    char buffer[200], outbuf[256];
+    char strings[20];
+//    int led = x;
+    int on = x;
+    if(x == 1) t.start(blink);
+    else t.terminate();
+/*
+while(1) {
+    sprintf(strings, "/myled2/write 1");
+    strcpy(buffer, strings);
+    RPC::call(buffer, outbuf);
+    if (success) {
+        out->putData(buffer);
+    } else {
+        out->putData("Failed to execute LED control.");
+    }
+    ThisThread::sleep_for(500ms);
+
+    sprintf(strings, "/myled2/write 0");
+    strcpy(buffer, strings);
+        RPC::call(buffer, outbuf);
+    if (success) {
+        out->putData(buffer);
+    } else {
+        out->putData("Failed to execute LED control.");
+    }
+
+    sprintf(strings, "/myled3/write 1");
+    strcpy(buffer, strings);
+    RPC::call(buffer, outbuf);
+    if (success) {
+        out->putData(buffer);
+    } else {
+        out->putData("Failed to execute LED control.");
+    }
+    ThisThread::sleep_for(500ms);
+
+    sprintf(strings, "/myled3/write 0");
+    strcpy(buffer, strings);
+    RPC::call(buffer, outbuf);
+    if (success) {
+        out->putData(buffer);
+    } else {
+        out->putData("Failed to execute LED control.");
+    }
+}*/
+}
+
