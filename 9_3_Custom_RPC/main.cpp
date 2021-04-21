@@ -15,14 +15,18 @@ void LEDblink(Arguments *in, Reply *out);
 RPCFunction rpcLED(&LEDblink, "LEDblink");
 
 double x, y;
+int flag=0; 
+
 
 Thread t;
+
 EventQueue q(32 * EVENTS_EVENT_SIZE);
 
 void blink(){
 while(1) {
     char buffer[200], outbuf[256];
     char strings[20];
+if(flag==1){
     sprintf(strings, "/myled2/write 1");
     strcpy(buffer, strings);
     RPC::call(buffer, outbuf);
@@ -42,10 +46,19 @@ while(1) {
     strcpy(buffer, strings);
     RPC::call(buffer, outbuf);
 }
+else {
+    sprintf(strings, "/myled2/write 0");
+    strcpy(buffer, strings);
+    RPC::call(buffer, outbuf);
+    sprintf(strings, "/myled3/write 0");
+    strcpy(buffer, strings);
+    RPC::call(buffer, outbuf);
+}
+}
 }
 int main() {
     //The mbed RPC classes are now wrapped to create an RPC enabled version - see RpcClasses.h so don't add to base class
-
+t.start(blink);
     // receive commands, and send back the responses
     char buf[256], outbuf[256];
 
@@ -94,6 +107,7 @@ void LEDControl (Arguments *in, Reply *out)   {
 
 void LEDblink (Arguments *in, Reply *out)   {
     bool success = true;
+    
   //  t.start(callback(&q, &EventQueue::dispatch_forever));
     // In this scenario, when using RPC delimit the two arguments with a space.
 //    x = in->getArg<double>();
@@ -105,8 +119,8 @@ void LEDblink (Arguments *in, Reply *out)   {
     char strings[20];
 //    int led = x;
     int on = x;
-    if(x == 1) t.start(blink);
-    else t.terminate();
+    if(x == 1) flag=1;
+    else flag=0;
 /*
 while(1) {
     sprintf(strings, "/myled2/write 1");
